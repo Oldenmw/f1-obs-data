@@ -1,6 +1,16 @@
 const { F1TelemetryClient, constants } = require("@racehub-io/f1-telemetry-client");
 const { PACKETS } = constants;
 
+const OBSWebSocket = require("obs-websocket-js");
+const obs = new OBSWebSocket();
+obs.connect({
+    address: "localhost:4444"
+}).then(() => {
+    console.log("OBS connected!")
+}).catch(e => {
+    console.error("obs websocket error", e)
+});
+
 const client = new F1TelemetryClient();
 client.on(PACKETS.session, (data) => {
     //'m_header',
@@ -48,6 +58,16 @@ client.on(PACKETS.session, (data) => {
 
         if (cache["spectator-networkid"] && cache["spectator-networkid"] !== driver.m_networkId) {
             console.log(`Now spectating #${driver.m_raceNumber} @${driver.m_networkId} ${driver.m_name}`)
+            if (obs && driver.m_networkId !== 255) {
+                console.log("attempting", `POV ${driver.m_networkId + 1}`)
+                obs.send("SetCurrentScene", {
+                    "scene-name": `POV ${driver.m_networkId + 1}`
+                }).then(c => {
+                    console.log(`Switched scenes!`, c);
+                }).catch(e => {
+                    console.error("Failed to switch scenes :(", e);
+                })
+            }
         }
 
         cache["spectator-networkid"] = driver.m_networkId;
@@ -134,6 +154,9 @@ function lapComplete(oldData, newData, i) {
 
 client.on(PACKETS.participants, (p) => {
     drivers = p.m_participants || [];
+    console.log("--- Participants ---")
+    console.log(["ID", "Name", "Car", "Team"].join('\t'))
+    console.log(drivers.filter(d => d.m_networkId !== 255).sort((a,b) => a.m_networkId - b.m_networkId).map(d => [d.m_networkId + 1,d.m_name,d.m_raceNumber, constants.TEAMS[d.m_teamId]?.name].join('\t')).join('\n'))
 })
 
 client.on(PACKETS.lapData, (lapData) => {
@@ -185,9 +208,9 @@ client.on(PACKETS.lapData, (lapData) => {
 })
 
 setInterval(() => {
-    console.log("=====")
-    console.log(leaderboard.filter(e => e.pos !== 0 && e.status !== 7).sort((a,b) => a.pos - b.pos).map(e => e.text).join('\n'))
-    console.log("=====")
+    // console.log("=====")
+    // console.log(leaderboard.filter(e => e.pos !== 0 && e.status !== 7).sort((a,b) => a.pos - b.pos).map(e => e.text).join('\n'))
+    // console.log("=====")
 }, 2000);
 
 client.start();

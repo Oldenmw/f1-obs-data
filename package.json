@@ -20,6 +20,7 @@
     "nodemon": "^2.0.15"
   },
   "dependencies": {
-    "@racehub-io/f1-telemetry-client": "^0.2.6"
+    "@racehub-io/f1-telemetry-client": "^0.2.6",
+    "obs-websocket-js": "^4.0.3"
   }
 }
