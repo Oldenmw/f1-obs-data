@@ -1,0 +1,25 @@
+{
+  "name": "f1obscontrol",
+  "version": "1.0.0",
+  "description": "f1 telemetry control with obs websocket",
+  "main": "src/index.js",
+  "scripts": {
+    "serve": "nodemon src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Oldenmw/f1-obs-data.git"
+  },
+  "author": "oldenmw, slmnio",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Oldenmw/f1-obs-data/issues"
+  },
+  "homepage": "https://github.com/Oldenmw/f1-obs-data#readme",
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  },
+  "dependencies": {
+    "@racehub-io/f1-telemetry-client": "^0.2.6"
+  }
+}
