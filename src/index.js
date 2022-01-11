@@ -11,6 +11,42 @@ obs.connect({
     console.error("obs websocket error", e)
 });
 
+const express = require('express');
+const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const path = require('path');
+
+const { Server } = require("socket.io");
+const io = new Server(server);
+
+app.use(express.static(path.join(__dirname, '../www')));
+
+server.listen(3000, () => {
+    console.log('listening on *:3000');
+});
+
+io.on("connection", (socket) => {
+    console.log("New socket connection");
+
+    io.sockets.emit("new-alert", {
+        duration: 5000,
+        title: "Test title",
+        description: "Test deez"
+    })
+});
+
+function sendAlert(alert) {
+    io.sockets.emit("new-alert", alert);
+}
+// setInterval(() => {
+//     sendAlert({
+//         title: "Test alert",
+//         description: "testing these nuts",
+//         duration: 2500
+//     })
+// }, 2000);
+
 const client = new F1TelemetryClient();
 client.on(PACKETS.session, (data) => {
     //'m_header',
@@ -132,6 +168,7 @@ function getSectorColor(oldData, newData, i) {
 }
 
 function lapComplete(oldData, newData, i) {
+    if (oldData.m_pitStatus !== 0) return;
     if (!cache[`car-bestlap-time-${i}`]) return cache[`car-bestlap-time-${i}`] = newData.m_lastLapTimeInMS;
     let driver = drivers[i];
 
@@ -143,12 +180,20 @@ function lapComplete(oldData, newData, i) {
             oldData.m_sector2TimeInMS,
             oldData.currentSectorTime
         ]
-        if (driver && driver?.m_networkId !== 255) console.log("player's best lap!", [
-            newData.m_lastLapTimeInMS,
-            oldData.m_sector1TimeInMS,
-            oldData.m_sector2TimeInMS,
-            oldData.currentSectorTime
-        ].map(p => msToHMS(p)));
+        if (driver && driver?.m_networkId !== 255) {
+
+            sendAlert({
+                title: `Car #${car.m_raceNumber} (P${car.m_carPosition} - Driver's best lap!`,
+                description: `Time: ~ ${msToHMS(newData.m_lastLapTimeInMS)}`
+            })
+
+            console.log("player's best lap!", [
+                newData.m_lastLapTimeInMS,
+                oldData.m_sector1TimeInMS,
+                oldData.m_sector2TimeInMS,
+                oldData.currentSectorTime
+            ].map(p => msToHMS(p)));
+        }
     }
 }
 
@@ -175,8 +220,14 @@ client.on(PACKETS.lapData, (lapData) => {
 
         if (old && old.m_sector !== car.m_sector) {
             let sectorColor = getSectorColor(old, car, i);
-            if (driver && driver?.m_networkId !== 255) console.log("sector color:", sectorColor);
-            if (driver && driver?.m_networkId !== 255) console.log("current purple sectors: ", [...purple.sectors].map(p => msToHMS(p)))
+            if (driver && driver?.m_networkId !== 255) {
+                sendAlert({
+                    title: `Car #${car.m_raceNumber} (P${car.m_carPosition} ${sectorColor} in sector ${car.m_sector + 1}`,
+                    description: `Time: ~ ${msToHMS(old.currentSectorTime)}`
+                })
+                console.log("sector color:", sectorColor);
+                console.log("current purple sectors: ", [...purple.sectors].map(p => msToHMS(p)));
+            }
         }
 
 

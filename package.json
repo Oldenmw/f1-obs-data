@@ -21,6 +21,8 @@
   },
   "dependencies": {
     "@racehub-io/f1-telemetry-client": "^0.2.6",
-    "obs-websocket-js": "^4.0.3"
+    "express": "^4.17.2",
+    "obs-websocket-js": "^4.0.3",
+    "socket.io": "^4.4.1"
   }
 }

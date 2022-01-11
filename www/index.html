@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>F1 Overlay</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+</head>
+<body>
+<div id="app" v-cloak>
+    <transition-group tag="div" id="alerts" name="list">
+        <div class="alert" v-for="alert in alerts" :key="alert.id" :data-key="alert.id" v-bind:key="alert.id">
+            <div class="alert-title">{{ alert.title }}</div>
+            <div class="alert-description">{{ alert.description }}</div>
+        </div>
+    </transition-group>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = new io();
+
+    const app = new Vue({
+        el: "#app",
+        data: {
+            alerts: []
+        }
+    })
+
+    socket.on("connect", () => {
+        console.log("connected to websocket!");
+    })
+
+    socket.on("new-alert", (alert) => {
+        let id = (new Date()).getTime();
+        alert = { ...alert, id }
+        console.log(alert);
+
+        app.alerts.push(alert);
+
+        setTimeout(() => {
+            let idx = app.alerts.findIndex(a => a.id === id);
+            if (idx !== -1) app.alerts.splice(idx, 1);
+        }, alert.duration || 5000);
+    });
+
+</script>
+</body>
+</html>

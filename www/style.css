@@ -1,0 +1,70 @@
+body {
+    background-color: transparent;
+    color: white;
+    font-family: "F1", sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+
+    background-image: url(https://cdn.discordapp.com/attachments/485493459357007876/930596942189301790/f1.png);
+    background-size: 1920px 1080px;
+}
+* {
+    box-sizing: border-box;
+}
+@font-face {
+    font-family: "F1";
+    src: url("https://media.slmn.io/fonts/Formula1-Regular.woff2");
+    font-weight: normal;
+}
+@font-face {
+    font-family: "F1";
+    src: url("https://media.slmn.io/fonts/Formula1-Bold.woff2");
+    font-weight: 700;
+}
+@font-face {
+    font-family: "F1";
+    src: url("https://media.slmn.io/fonts/Formula1-Black.woff2");
+    font-weight: 900;
+}
+
+h1 {
+    background-color: black;
+    color: white;
+}
+
+#alerts {
+    position: absolute;
+    right: 90px;
+    top: 155px;
+    width: 454px;
+    opacity: 0.8;
+}
+.alert {
+    background-color: black;
+    color: white;
+    padding: 6px;
+    border-bottom-right-radius: 10px;
+    display: flex;
+    flex-direction: column;
+
+
+    transition: all 200ms;
+    display: inline-flex;
+    width: 100%;
+    margin-top: 3px;
+}
+
+.alert-title {
+    font-weight: bold;
+}
+
+.list-enter, .list-leave-to {
+    opacity: 0;
+}
+.list-leave-active {
+    position: absolute;
+}
+.list-move {
+    transition: transform 250ms
+}
