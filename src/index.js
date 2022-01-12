@@ -183,8 +183,10 @@ function lapComplete(oldData, newData, i) {
         if (driver && driver?.m_networkId !== 255) {
 
             sendAlert({
-                title: `Car #${car.m_raceNumber} (P${car.m_carPosition} - Driver's best lap!`,
-                description: `Time: ~ ${msToHMS(newData.m_lastLapTimeInMS)}`
+                title: `(P${newData.m_carPosition}) ${driver?.m_raceNumber ? `Car #${driver.m_raceNumber} ` : ''}- Driver's best lap!`,
+                description: `Time: ${msToHMS(newData.m_lastLapTimeInMS)}`,
+                stripe: "white",
+                duration: 8000
             })
 
             console.log("player's best lap!", [
