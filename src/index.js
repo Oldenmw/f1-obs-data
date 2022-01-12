@@ -31,8 +31,9 @@ io.on("connection", (socket) => {
 
     io.sockets.emit("new-alert", {
         duration: 5000,
-        title: "Test title",
-        description: "Test deez"
+        title: "F1 Data system",
+        description: "by Freya & SLMN",
+        stripe: "lime"
     })
 });
 
@@ -201,9 +202,9 @@ function lapComplete(oldData, newData, i) {
 
 client.on(PACKETS.participants, (p) => {
     drivers = p.m_participants || [];
-    console.log("--- Participants ---")
-    console.log(["ID", "Name", "Car", "Team"].join('\t'))
-    console.log(drivers.filter(d => d.m_networkId !== 255).sort((a,b) => a.m_networkId - b.m_networkId).map(d => [d.m_networkId + 1,d.m_name,d.m_raceNumber, constants.TEAMS[d.m_teamId]?.name].join('\t')).join('\n'))
+    // console.log("--- Participants ---")
+    // console.log(["ID", "Name", "Car", "Team"].join('\t'))
+    // console.log(drivers.filter(d => d.m_networkId !== 255).sort((a,b) => a.m_networkId - b.m_networkId).map(d => [d.m_networkId + 1,d.m_name,d.m_raceNumber, constants.TEAMS[d.m_teamId]?.name].join('\t')).join('\n'))
 })
 
 client.on(PACKETS.lapData, (lapData) => {
@@ -222,10 +223,11 @@ client.on(PACKETS.lapData, (lapData) => {
 
         if (old && old.m_sector !== car.m_sector) {
             let sectorColor = getSectorColor(old, car, i);
-            if (driver && driver?.m_networkId !== 255) {
+            if (driver && driver?.m_networkId !== 255 && sectorColor === "purple") {
                 sendAlert({
-                    title: `Car #${car.m_raceNumber} (P${car.m_carPosition} ${sectorColor} in sector ${car.m_sector + 1}`,
-                    description: `Time: ~ ${msToHMS(old.currentSectorTime)}`
+                    title: `(P${car.m_carPosition}) ${driver?.m_raceNumber ? `Car #${driver.m_raceNumber} ` : ''}${sectorColor} sector ${car.m_sector + 1}`,
+                    description: `Sector ${car.m_sector + 1} time: ${msToHMS(old.currentSectorTime)}`,
+                    stripe: sectorColor
                 })
                 console.log("sector color:", sectorColor);
                 console.log("current purple sectors: ", [...purple.sectors].map(p => msToHMS(p)));
@@ -247,12 +249,12 @@ client.on(PACKETS.lapData, (lapData) => {
                 `Lap: ${car.m_currentLapNum}`,
                 `Best: ${msToHMS(best || 0)}`,
                 `Last: ${msToHMS(car.m_lastLapTimeInMS)}`,
-                `Now: ${msToHMS(car.m_currentLapTimeInMS)}`,
+                // `Now: ${msToHMS(car.m_currentLapTimeInMS)}`,
                 `SC: ${msToHMS(currentSectorTime)}`,
                 // `S1: ${msToHMS(car.m_sector1TimeInMS)}`,
                 // `S2: ${msToHMS(car.m_sector2TimeInMS)}`,
                 `In sector: ${car.m_sector + 1}`,
-                `Status D${car.m_driverStatus} R${car.m_resultStatus} P${car.m_pitStatus}`,
+                // `Status D${car.m_driverStatus} R${car.m_resultStatus} P${car.m_pitStatus}`,
                 // `Result status: ${car.m_resultStatus}`,
                 `Penalties: ${car.m_penalties} ${car.m_currentLapInvalid}`
             ].join('\t')
@@ -261,9 +263,9 @@ client.on(PACKETS.lapData, (lapData) => {
 })
 
 setInterval(() => {
-    // console.log("=====")
-    // console.log(leaderboard.filter(e => e.pos !== 0 && e.status !== 7).sort((a,b) => a.pos - b.pos).map(e => e.text).join('\n'))
-    // console.log("=====")
+    console.log("=====")
+    console.log(leaderboard.filter(e => e.pos !== 0 && e.status !== 7).sort((a,b) => a.pos - b.pos).map(e => e.text).join('\n'))
+    console.log("=====")
 }, 2000);
 
 client.start();

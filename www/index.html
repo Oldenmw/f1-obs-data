@@ -10,8 +10,11 @@
 <div id="app" v-cloak>
     <transition-group tag="div" id="alerts" name="list">
         <div class="alert" v-for="alert in alerts" :key="alert.id" :data-key="alert.id" v-bind:key="alert.id">
-            <div class="alert-title">{{ alert.title }}</div>
-            <div class="alert-description">{{ alert.description }}</div>
+            <div class="alert-stripe" v-if="alert.stripe" :data-stripe="alert.stripe" :style="{ backgroundColor: alert.stripe }"></div>
+            <div class="alert-body">
+                <div class="alert-title">{{ alert.title }}</div>
+                <div class="alert-description">{{ alert.description }}</div>
+            </div>
         </div>
     </transition-group>
 </div>

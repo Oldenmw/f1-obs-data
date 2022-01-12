@@ -6,8 +6,8 @@ body {
     padding: 0;
     overflow: hidden;
 
-    background-image: url(https://cdn.discordapp.com/attachments/485493459357007876/930596942189301790/f1.png);
-    background-size: 1920px 1080px;
+    /*background-image: url(https://cdn.discordapp.com/attachments/485493459357007876/930596942189301790/f1.png);*/
+    /*background-size: 1920px 1080px;*/
 }
 * {
     box-sizing: border-box;
@@ -46,7 +46,6 @@ h1 {
     padding: 6px;
     border-bottom-right-radius: 10px;
     display: flex;
-    flex-direction: column;
 
 
     transition: all 200ms;
@@ -67,4 +66,9 @@ h1 {
 }
 .list-move {
     transition: transform 250ms
+}
+.alert-stripe {
+    background-color: gray;
+    width: 4px;
+    margin-right: 8px;
 }
