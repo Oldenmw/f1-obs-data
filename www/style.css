@@ -38,7 +38,7 @@ h1 {
     right: 90px;
     top: 155px;
     width: 454px;
-    opacity: 0.8;
+    opacity: 0.95;
 }
 .alert {
     background-color: black;
@@ -71,4 +71,24 @@ h1 {
     background-color: gray;
     width: 4px;
     margin-right: 8px;
+}
+.fastest {
+    color: #00f3ff;
+}
+
+.ai {
+    position: absolute;
+    right: 544px;
+    top: 90px;
+    background-color: #dd3232;
+    color: black;
+    border-bottom-left-radius: 8px;
+    width: 54px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 25px;
+    padding-bottom: 3px;
 }

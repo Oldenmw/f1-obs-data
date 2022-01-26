@@ -8,6 +8,8 @@
 </head>
 <body>
 <div id="app" v-cloak>
+    <div class="ai" v-if="isAI">AI</div>
+
     <transition-group tag="div" id="alerts" name="list">
         <div class="alert" v-for="alert in alerts" :key="alert.id" :data-key="alert.id" v-bind:key="alert.id">
             <div class="alert-stripe" v-if="alert.stripe" :data-stripe="alert.stripe" :style="{ backgroundColor: alert.stripe }"></div>
@@ -25,12 +27,21 @@
     const app = new Vue({
         el: "#app",
         data: {
-            alerts: []
+            alerts: [],
+            spectatingCar: null
+        },
+        computed: {
+            isAI() {
+                // return true;
+                return this.spectatingCar && this.spectatingCar.isAI;
+            }
         }
     })
 
     socket.on("connect", () => {
         console.log("connected to websocket!");
+        // socket.emit("subscribe", "leaderboard");
+        socket.emit("subscribe", "spectating");
     })
 
     socket.on("new-alert", (alert) => {
@@ -43,8 +54,12 @@
         setTimeout(() => {
             let idx = app.alerts.findIndex(a => a.id === id);
             if (idx !== -1) app.alerts.splice(idx, 1);
-        }, alert.duration || 5000);
+        }, alert.duration || 8000);
     });
+    socket.on("spectating", car => {
+        app.spectatingCar = car;
+        console.log(car);
+    })
 
 </script>
 </body>

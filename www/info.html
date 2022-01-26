@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>F1 Overlay</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <style>
+        body {
+            background-color: #222;
+            font-variant-numeric: tabular-nums;
+            margin: 1em;
+            overflow: initial;
+        }
+
+        table {
+            border-spacing: 0;
+            border-left: 1px solid #555;
+            border-bottom: 1px solid #555;
+        }
+
+        td, th {
+            padding: 1px 4px;
+            border-right: 1px solid #555;
+            border-top: 1px solid #555;
+        }
+
+        tr:hover td, td:hover {
+            background-color: #444;
+        }
+
+        tr.is-spectating {
+            background-color: #00696e;
+        }
+
+        .sectors {
+            display: flex;
+        }
+
+        .sector + .sector {
+            margin-left: 4px;
+        }
+
+        .sector {
+            min-width: 100px;
+            padding: 0 6px;
+        }
+
+        .sector[data-sector-color="red"] {
+            background-color: darkred;
+        }
+
+        .sector[data-sector-color="green"] {
+            background-color: darkgreen;
+        }
+
+        .sector[data-sector-color="purple"] {
+            background-color: purple;
+        }
+
+        .status--dnf {
+            background-color: #333;
+            color: #ccc;
+        }
+
+        .status--dsq {
+            background-color: #533;
+            color: #ccc;
+        }
+
+    </style>
+    <link rel="stylesheet" href="https://slmn.io/fa-all.min.css"/>
+</head>
+<body>
+<div id="app" v-cloak>
+    <table v-if="leaderboardData?.[0]">
+        <thead>
+        <th>Pos</th>
+        <th></th>
+        <th>Name</th>
+        <th>Best Lap</th>
+        <th>Lap</th>
+        <th>Current</th>
+        <th>Sec</th>
+        <th>Sectors</th>
+        <th>Tyres</th>
+        <th>Pen</th>
+        <th>DS</th>
+        <th>Pit</th>
+        <th colspan="2">Grid</th>
+        <th>AI</th>
+        <th colspan="3">IDs</th>
+        </thead>
+        <tbody>
+        <tr v-for="(car, i) in leaderboardData" v-bind:key="car.carI"
+            v-bind:class="{'is-spectating': car.carI === spectatingCar?.carI, 'status--dnf': car.resultStatus === 7, 'status--dsq': car.resultStatus === 5 }">
+            <!--        <td v-for="[key, val] in Object.entries(car)">-->
+            <!--          {{ val }}-->
+            <!--        </td>-->
+            <td>P{{ car.pos }}</td>
+            <td class="team-slice" :style="{backgroundColor: car.team?.color}"></td>
+            <td>{{ car.name }}</td>
+            <td :class="{'fastest': fastestCar && fastestCar.carI === car.carI}">{{ car.bestLapTime }}</td>
+            <td>{{ car.currentLapNum }}</td>
+            <td>{{ car.currentLapTime }}</td>
+            <td>{{ car.inSector }}</td>
+
+            <td class="sectors">
+                <div class="sector" v-for="sector in car.sectors"
+                     :data-sector-color="sector.sectorTime !== '-:--.---' && sector.sectorColor"
+                     :title="sector.bestLapSectorTime">
+                    {{ sector.sectorTime }}
+                </div>
+            </td>
+            <td class="tyres" v-if="car.tyres">
+                <i class="fas fa-tire" :style="{color: car.tyres.color}"></i>
+                {{ car.tyres.name }} {{ car.carStatus?.m_tyresAgeLaps }}
+                lap{{ car.carStatus?.m_tyresAgeLaps === 1 ? '' : 's' }}
+            </td>
+            <td>
+                {{ car.penalties > 0 ? `${car.penalties}s` : '' }}
+                {{ car.driveThroughs > 0 ? `DT${car.driveThroughs === 1 ? '' : ` x${car.driveThroughs}`}` : '' }}
+            </td>
+            <td>{{ car.driverStatus }}</td>
+            <td>{{ car.allCarData.m_numPitStops }} stop{{ car.allCarData.m_numPitStops === 1 ? '' : 's' }} {{ car.pitStatus !== 0 ? `PIT ${car.pitStatus}` : '' }}</td>
+            <td>{{ car.gridPosition }}</td>
+            <td class="grid-diff" :style="{color: car.gridDiff > 0 ? 'lime' : car.gridDiff < 0 ? 'red' : ''}">
+                <i class="fas fa-fw fa-chevron-up" v-if="car.gridDiff > 0"></i>
+                <i class="fas fa-fw fa-chevron-down" v-if="car.gridDiff < 0"></i>
+                <i class="fas fa-fw fa-minus" v-if="!car.gridDiff"></i>
+                <span v-if="car.gridDiff">{{ Math.abs(car.gridDiff) }}</span>
+            </td>
+            <td>{{ car.ai ? 'AI': ''}}</td>
+            <td>i{{ car.carI }}</td>
+            <td>C{{ car.carNumber }}</td>
+            <td>N{{ car.networkID }}</td>
+            <td>{{ car.resultStatus }}</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <hr>
+    <h3>Next to finish lap</h3>
+    <table>
+        <tr v-for="car in nextToFinishLap">
+            <td class="team-slice" :style="{backgroundColor: car.team?.color}"></td>
+            <td>{{ car.name }}</td>
+            <td :style="diffColor(car.carI)">{{ justFinishedLapData[car.carI]?.hold ? parseDiff(justFinishedLapData[car.carI].diff) : car.currentLapTime }}</td>
+            <td>{{ fastestCar.bestLapTime }}</td>
+            <td>P{{ car.pos }}</td>
+            <td>{{ justFinishedLapData[car.carI]?.hold ? car.lastLapTime : '' }}</td>
+        </tr>
+    </table>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = new io();
+
+    const app = new Vue({
+        el: "#app",
+        data: {
+            leaderboardData: [],
+            spectatingCar: null,
+            justFinishedLapData: []
+        },
+        computed: {
+            nextToFinishLap() {
+                return [...this.leaderboardData].sort((a, b) => {
+                    let [aHold, bHold] = [a,b].map(x => this.justFinishedLapData[x.carI]?.hold);
+                    if (aHold !== bHold) {
+                        if (aHold) return -1;
+                        if (bHold) return 1;
+                    }
+                    return b.allCarData.m_lapDistance - a.allCarData.m_lapDistance
+                }).filter(car => (unText(car.currentLapTime) || this.justFinishedLapData[car.carI]?.hold) && car.pitStatus === 0 && ![5,7].includes(car.resultStatus));
+            },
+            fastestCar() {
+                return this.leaderboardData.filter(m => m.bestLapTime).sort((a, b) => unText(a.bestLapTime) - unText(b.bestLapTime))[0]
+            }
+        },
+        watch: {
+            leaderboardData(newData, oldData) {
+                newData.forEach((newCar) => {
+                    let oldCar = oldData.find(c => c.carI === newCar.carI);
+                    if (!oldCar) return;
+
+                    if (newCar.currentLapNum !== oldCar.currentLapNum) {
+                        console.log("lap finished", newCar)
+                        // TODO: If they get the fastest lap, they become the fastest car.
+                        //  Need to cache it somehow or check that this.fastestCar was from this lap just finished
+                        this.justFinishedLapData[newCar.carI] = {
+                            last: newCar.lastLapTime,
+                            diff: unText(newCar.lastLapTime) - unText(this.fastestCar.bestLapTime),
+                            hold: true
+                        };
+                        setTimeout(() => {
+                            this.justFinishedLapData[newCar.carI].hold = false;
+                        }, 5000)
+                    }
+                })
+            }
+        },
+        methods: {
+            zeroPad(num, size) {
+                return Math.abs(num).toString().padStart(size, "0")
+            },
+            parseDiff(ms) {
+                let [s, sr] = [Math.floor(ms / 1000), ms % 1000]
+                return `${(ms > 0 ? "+" : "-")}${this.zeroPad(s, 1)}.${this.zeroPad(sr, 3)}`
+            },
+            diffColor(carI) {
+                let data = this.justFinishedLapData[carI];
+                if (!data?.hold || !data?.diff) return null;
+                return {
+                    color: data.diff < 0 ? 'lime' : 'yellow'
+                }
+            }
+        }
+    })
+
+    function unText(text) {
+        if (!text) return 0;
+        if (text === "-:--.---") return 0;
+
+        let [mins, secs] = text.split(":");
+        let ms;
+
+        [secs, ms] = secs.split('.')
+
+        console.log(mins, secs, ms);
+
+        return (parseInt(mins) * 60 * 1000) + (parseInt(secs) * 1000) + parseInt(ms);
+    }
+
+    socket.on("connect", () => {
+        console.log("connected to websocket!");
+        socket.emit("subscribe", "leaderboard");
+        socket.emit("subscribe", "spectating");
+    })
+
+    function sortLeaderboard(a, b) {
+        if (a.pos === b.pos) return 0;
+        if (a.pos === 0) return 1;
+        if (b.pos === 0) return -1;
+        return a.pos - b.pos;
+    }
+
+    socket.on("leaderboard", data => {
+        // console.log("leaderboard data", data);
+        app.leaderboardData = data.filter(car => car.pos !== 0).sort(sortLeaderboard).map(car => {
+            let gridDiff = car.gridPosition - car.pos;
+            return {
+                ...car,
+                gridDiff
+            };
+        });
+    })
+    socket.on("spectating", car => {
+        app.spectatingCar = car;
+    })
+</script>
+</body>
+</html>
