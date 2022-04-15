@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>F1 Overlay</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <style>
+        #app {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #standings {
+            position: absolute;
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            margin: .5em;
+            font-size: 31px;
+        }
+
+        .standing {
+            display: flex;
+            padding: .2em .25em;
+        }
+        .standings-header {
+            font-weight: bold;
+        }
+
+        .s-cell {
+            display: flex;
+            padding: 0 0.25em;
+        }
+        .s-cell-pos {
+            min-width: 15em;
+        }
+
+        .s-pos {
+            background-color: white;
+            color: black;
+            font-weight: bold;
+            width: 1.55em;
+            height: 1.55em;
+            font-size: 0.8em;
+            margin: -.1em 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom-right-radius: 30%;
+            margin-right: .5em;
+            align-self: flex-end;
+        }
+
+        .s-stripe {
+            width: .2em;
+            margin-right: .25em;
+            margin-top: .1em;
+        }
+
+        .s-cell-team {
+            min-width: 11em;
+        }
+        .s-cell-time {
+            min-width: 6.5em;
+            font-variant: tabular-nums;
+            justify-content: flex-end;
+        }
+        .s-cell-best-lap {
+            min-width: 7em;
+            font-variant: tabular-nums;
+            justify-content: center;
+        }
+
+        .s-cell-penalties {
+            min-width: 6em;
+            justify-content: center;
+        }
+
+        .s-cell-points {
+            justify-content: flex-end;
+            min-width: 5em;
+        }
+        .standing {
+            background-image: linear-gradient(183deg, rgba(0,0,0,0.5), rgba(0,0,0,0.7));
+        }
+
+        .s-cell {
+            transform: translate(0, -.1em);
+        }
+    </style>
+</head>
+<body>
+<div id="app" v-cloak>
+    <div id="standings">
+        <div class="standing standings-header">
+            <div class="s-cell s-cell-pos">
+                <div class="s-name">Driver</div>
+            </div>
+            <div class="s-cell s-cell-team">Team</div>
+            <div class="s-cell s-cell-best-lap">Best Lap</div>
+            <div class="s-cell s-cell-time">Time</div>
+            <div class="s-cell s-cell-penalties">Penalties</div>
+            <div class="s-cell s-cell-points">Points</div>
+
+        </div>
+        <standing v-for="car in standings" :car="car" :key="car.carI"></standing>
+    </div>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = new io();
+
+    const app = new Vue({
+        el: "#app",
+        data: {
+            finalClassification: [],
+            leaderboardData: []
+        },
+        computed: {
+            standings() {
+                return this.finalClassification.sort((a,b) => {
+                    if (a.m_position !== b.m_position) {
+                        if (a.m_position === 0) return 1;
+                        if (b.m_position === 0) return -1;
+                    }
+                    return a.m_position - b.m_position
+                });
+            },
+            P1() {
+                return this.finalClassification.find(car => car.m_position === 1);
+            }
+        },
+        methods: {
+            msToHMS(ms) {
+                if (!ms) return "-:--.---"
+                let [m, mr] = [Math.floor(ms / (60 * 1000)),ms % (60 * 1000)];
+                let [s, sr] = [Math.floor(mr / 1000), ms % 1000]
+                // console.log(m, mr);
+
+                return `${m}:${this.zeroPad(s, 2)}.${this.zeroPad(sr, 3)}`
+            },
+            msToMS(ms) {
+                if (!ms) return "--.---"
+                let mr = ms % (60 * 1000);
+                let [s, sr] = [Math.floor(mr / 1000), ms % 1000]
+                // console.log(m, mr);
+
+                return `${s}.${this.zeroPad(sr, 3)}`
+            },
+            zeroPad(num, size) {
+                return Math.floor(Math.abs(num)).toString().padStart(size, "0").slice(0, size);
+            },
+            parseDiff(ms) {
+                let [s, sr] = [Math.floor(Math.abs(ms) / 1000), Math.abs(ms) % 1000]
+                return `${(ms > 0 ? "+" : "-")}${this.zeroPad(s, 1)}.${this.zeroPad(sr, 3)}`
+            },
+        },
+        components: {
+            "standing": {
+                name: "Standing",
+                props: ["car"],
+                computed: {
+                    timeDiff() {
+                        if (this.car.status) return "";
+                        let time = this.car.m_totalRaceTime + this.car.m_penaltiesTime
+                        if (this.car.m_position === 1) return this.$root.msToHMS(time * 1000);
+                        let P1 = this.$root.P1;
+                        if (P1.m_numLaps === this.car.m_numLaps) {
+                            // time diff
+                            return this.$root.parseDiff((time - P1.m_totalRaceTime) * 1000)
+                        } else {
+                            // lap diff
+                            let lapDiff = P1.m_numLaps - this.car.m_numLaps
+                            return `+${lapDiff} lap${lapDiff === 1 ? '' : 's'}`
+                        }
+                    }
+                },
+                template: `<div class="standing">
+                <div class="s-cell s-cell-pos">
+                    <div class="s-pos">{{ car.m_position }}</div>
+                    <div class="s-stripe" :style="{backgroundColor: car.carData.team.color}"></div>
+                    <div class="s-name">{{ car.carData.name }}</div>
+                </div>
+                <div class="s-cell s-cell-team">{{ car.carData.team.name }}</div>
+                <div class="s-cell s-cell-best-lap" :class="{'fastest': car._fastest}">{{ $root.msToHMS(car.m_bestLapTimeInMS) }}</div>
+<!--                <div class="s-cell s-laps">{{ car.m_numLaps }}</div>-->
+                <div class="s-cell s-cell-time">{{ timeDiff }}</div>
+                <div class="s-cell s-cell-penalties">
+                    {{ car.m_numPenalties ? \`+\${car.m_penaltiesTime}s\ (x\${car.m_numPenalties})\` : '' }}
+                </div>
+<!--                <div class="s-cell">{{ car.carData.resultStatus }} {{ car.carData.driverStatus }}</div>-->
+                <div class="s-cell s-cell-points">{{ car.m_points || car.status || '0' }}</div>
+                </div>`
+            }
+        }
+    })
+
+    socket.on("connect", () => {
+        console.log("connected to websocket!");
+        socket.emit("subscribe", "finalClassification");
+        socket.emit("subscribe", "leaderboard");
+    })
+
+    socket.on("leaderboard", data => {
+        // console.log("leaderboard data", data);
+        app.leaderboardData = data;
+    })
+
+    socket.on("finalClassification", data => {
+        let fastest = null;
+        if (data && data.m_classificationData) app.finalClassification = data.m_classificationData.filter(car => car.m_position !== 0).map((car, i) => {
+            car.carI = i;
+            if (app.leaderboardData) {
+                car.carData = app.leaderboardData.find(c => c.carI === car.carI);
+            }
+            if (car.carData) {
+                if (car.carData.resultStatus === 4) car.status = "DNF";
+                if (car.carData.resultStatus === 7) car.status = "DNF";
+                if (car.carData.resultStatus === 5) car.status = "DSQ";
+            }
+            if (!fastest || fastest > car.m_bestLapTimeInMS && !car.status) {
+                fastest = car.m_bestLapTimeInMS;
+            }
+            return car;
+        }).map(car => {
+            console.log(fastest, car.m_bestLapTimeInMS)
+            if (car.m_bestLapTimeInMS === fastest) car._fastest = true;
+            return car;
+        })
+    });
+
+</script>
+</body>
+</html>

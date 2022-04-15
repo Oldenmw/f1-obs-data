@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>F1 Overlay</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <style data-for="speed-trap">
+        body {
+            width: 90px;
+            height: 50px;
+            /*border: 2px solid red;*/
+            /*background: black;*/
+        }
+
+        #app {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            position: relative;
+        }
+
+        .speed {
+            position: absolute;
+            background-color: rgba(0,0,0,0.9);
+            font-size: 23px;
+            padding: .2em 0;
+            opacity: 0.9;
+            width: 100%;
+            text-align: center;
+            border-bottom-right-radius: 8px;
+            overflow: hidden;
+            font-variant-numeric: tabular-nums;
+        }
+        .speed.driver { background-color: teal; }
+        .speed.overall { background-color: blue; }
+
+        .swipe-enter-active, .swipe-leave-active { transition: all .2s ease; overflow: hidden }
+        .swipe-leave-to { clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%); }
+        .swipe-enter { clip-path: polygon(0 0, 0 0, 0 100%, 0% 100%); }
+        .swipe-enter-to, .swipe-leave { clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%); }
+    </style>
+</head>
+<body>
+<div id="app" v-cloak>
+    <transition mode="out-in" name="swipe">
+        <div :key="speed.speed" class="speed" v-if="speed" :class="{ 'driver': speed.driverFastest ,'overall': speed.overallFastest }">{{ speed.speed }}</div>
+    </transition>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = new io();
+
+    const app = new Vue({
+        el: "#app",
+        data: {
+            speeds: [],
+            speed: null,
+            speedTO: null,
+            overallFastest: null,
+            driverFastest: null,
+            lockout: false
+        },
+        methods: {
+            nextSpeed() {
+                console.log(this.speeds.map(s => s.speed));
+                if (this.speeds.length) {
+                    this.speed = this.speeds.shift();
+                    setTimeout(() => {
+                        this.nextSpeed();
+                    }, this.speed.overallFastest ? 3000 : 800)
+                } else {
+                    this.speed = null;
+                }
+            }
+        },
+        watch: {
+            speeds(speedArr) {
+                console.log(this.speeds.map(s => s.speed));
+                if (!this.speed) {
+                    this.nextSpeed();
+                }
+            },
+            speed(data) {
+                if (this.speedTO) clearTimeout(this.speedTO)
+                if (!data) return;
+
+                this.speedTO = setTimeout(() => {
+                    // this.speed = null;
+                }, 10000)
+            },
+            overallFastest(data) {
+                if (data) {
+                    this.lockout = true;
+                    console.log("lockout")
+                    setTimeout(() => {
+                        this.lockout = false;
+                        console.log("unlocked")
+                    }, 5000);
+                }
+            }
+        }
+    })
+
+    socket.on("connect", () => {
+        console.log("connected to websocket!");
+        socket.emit("subscribe", "speedTrap")
+    })
+    socket.on("speedTrap", (data) => {
+        console.log(data, app.speeds);
+        app.speeds.push({
+            speed: (data.speed / 1.60934).toFixed(1),
+            overallFastest: data.overallFastestInSession,
+            driverFastest: data.driverFastestInSession
+        });
+    })
+</script>
+</body>
+</html>

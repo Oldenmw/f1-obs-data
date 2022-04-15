@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>F1 Overlay</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <style>
+        .standings {
+            background-color: rgba(0,0,0,0.95);
+            padding: 5px;
+            border-bottom-right-radius: 16px;
+        }
+        .standings td {
+            padding: 0 5px;
+        }
+        .center { text-align: center; }
+        .right { text-align: right; }
+        #app {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+        }
+        .team-stripe {
+            width: 4px;
+            height: 1em;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<div id="app" v-cloak>
+    <table class="standings">
+        <thead>
+            <th colspan="6" style="font-size: 1.25em;">JF1 Drivers' Standings</th>
+        </thead>
+        <thead>
+            <th></th>
+            <th colspan="2">Driver</th>
+            <th>P</th>
+            <th>Pts</th>
+            <th>+Pts</th>
+            <th>+Pos</th>
+        </thead>
+        <tr class="standing" v-for="(car, i) in standings">
+            <td class="center">{{ i + 1 }}</td>
+            <td>
+                <span v-if="car.team" class="team-stripe" :style="{ backgroundColor: car.team.color }"></span>
+            </td>
+            <td>{{ car.driver }}</td>
+            <td>
+                <span v-if="car.raced">P{{ car._classificationData.m_position }}</span>
+            </td>
+            <td class="right">{{ car.calculatedPoints }}</td>
+            <td>
+                <span v-if="car.raced">+{{ car._classificationData.m_points }}</span>
+            </td>
+            <td class="center" :style="getColor(car.rank - (i + 1))">{{ car.rank - (i + 1) | plus }}</td>
+        </tr>
+    </table>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = new io();
+
+    const app = new Vue({
+        el: "#app",
+        data: {
+            finalClassification: [],
+            leaderboardData: [],
+            localData: [],
+        },
+        computed: {
+            standings() {
+                return this.localData.map(car => {
+                    car._leaderboardData = this.leaderboardData.find(l => l.carNumber === parseInt(car.number));
+                    if (car._leaderboardData) car._classificationData = this.finalClassification.find(r => r.carI === car._leaderboardData.carI)
+                    // if (car._leaderboardData) car._localData = this.localData.find(local => parseInt(local.number) === car._leaderboardData.carNumber)
+                    if (car._leaderboardData) {
+                        if (car._leaderboardData.localDriverData && car._leaderboardData.localDriverData.customTeam && car._leaderboardData.localDriverData.customTeam.name) {
+                            car.team = car._leaderboardData.localDriverData.customTeam
+                        }
+                    }
+                    car.calculatedPoints = parseInt(car.points)
+                    if (car._classificationData) {
+                        car.raced = true;
+                        car.calculatedPoints += car._classificationData.m_points;
+                    }
+                    return car;
+                }).sort((a,b) => b.calculatedPoints - a.calculatedPoints)
+            }
+        },
+        methods: {
+            getColor(num) {
+                if (num > 0) return { color: "lime" }
+                if (num < 0) return { color: "red" }
+                return { color: "white" }
+            }
+        },
+        filters: {
+            plus(num) {
+                if (num === 0) return "--";
+                if (num > 0) return "+" + num;
+                return num;
+            }
+        }
+    })
+
+    socket.on("connect", () => {
+        console.log("connected to websocket!");
+        socket.emit("subscribe", "finalClassification");
+        socket.emit("subscribe", "localData");
+        socket.emit("subscribe", "leaderboard");
+    })
+
+    socket.on("leaderboard", leaderboardData => app.leaderboardData = leaderboardData);
+    socket.on("localData", localData => app.localData = localData);
+
+    socket.on("finalClassification", data => {
+        let fastest = null;
+        if (data && data.m_classificationData) app.finalClassification = data.m_classificationData.filter(car => car.m_position !== 0).map((car, i) => {
+            car.carI = i;
+            if (app.leaderboardData) {
+                car.carData = app.leaderboardData.find(c => c.carI === car.carI);
+            }
+            if (car.carData) {
+                if (car.carData.resultStatus === 4) car.status = "DNF";
+                if (car.carData.resultStatus === 7) car.status = "DNF";
+                if (car.carData.resultStatus === 5) car.status = "DSQ";
+            }
+            if (!fastest || fastest > car.m_bestLapTimeInMS && !car.status) {
+                fastest = car.m_bestLapTimeInMS;
+            }
+            return car;
+        }).map(car => {
+            // console.log(fastest, car.m_bestLapTimeInMS)
+            if (car.m_bestLapTimeInMS === fastest) car._fastest = true;
+            return car;
+        })
+    });
+</script>
+</body>
+</html>
