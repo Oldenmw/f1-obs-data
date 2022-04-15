@@ -5,43 +5,539 @@
     <title>Main Overlay - F1 Overlay</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <style data-for="podium">
+        #podium {
+            position: absolute;
+            bottom: 140px;
+            font-size: 38px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .podium-item {
+            width: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.97);
+            flex-direction: column;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .podium-item {
+            border-bottom-right-radius: 25px;
+            margin: 0 20px;
+            padding: 4px 8px;
+        }
+        .podium-item.o-p1 {
+            transform: translate(0, -25%);
+        }
+        .o-part {
+            margin: 4px 0;
+        }
+        .o-team {
+            text-transform: uppercase;
+            font-size: 0.75em;
+            min-height: 62px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .o-name {
+            display: flex;
+            width: 100%;
+        }
+        .o-stripe {
+            height: 4px;
+            width: 100%;
+        }
+        .o-name-text {
+            flex-grow: 1;
+            margin-right: 46px;
+        }
+        .o-pos {
+            background-color: white;
+            color: black;
+            width:  40px;
+            height: 40px;
+            display: flex;
+            font-size: 26px;
+            margin-right: 6px;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            padding-bottom: 2px;
+            border-bottom-right-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        #podium-lower {
+            position: absolute;
+            bottom: 60px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .o-lower-part {
+            width: 600px;
+
+            display: flex;
+            background-color: rgba(0, 0, 0, 0.95);
+            text-align: center;
+            line-height: 1;
+            font-size: 26px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .o-lower-part {
+            margin: 0 40px;
+            padding: 10px 5px;
+            border-bottom-right-radius: 16px;
+        }
+
+        .o-lower-text {
+            font-weight: bold;
+            margin-right: 20px;
+        }
+
+        .o-lower-stripe {
+            background-color: #777;
+            width: 6px;
+            height: 1.25em;
+            margin-right: 8px;
+            display: flex;
+        }
+
+        #podium-lower.podium-enter-active {
+            transition-delay: 500ms
+        }
+
+        .podium-enter-active, .podium-leave-active { transition: all .5s ease; }
+        .podium-enter, .podium-leave-to { opacity: 0; transform: translate(0, 50px) }
+        .podium-enter-to, .podium-leave { opacity: 1; transform: translate(0,0) }
+
+        #driver-profile {
+            background-color: rgba(0, 0, 0, 0.95);
+            border-bottom-right-radius: 16px;
+        }
+
+        #driver-profile {
+            display: flex;
+            position: absolute;
+            bottom: 40px;
+            font-size: 36px;
+            padding: .2em;
+            padding-right: .4em;
+        }
+
+        .d-right {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .d-top {
+            display: flex;
+            font-size: 1.25em;
+        }
+
+        .d-bottom {
+            display: flex;
+        }
+
+        .d-number {
+            font-size: 2em;
+            font-weight: bold;
+            text-shadow: 0 0 0.25em red;
+            width: 3ex;
+            margin-right: 0.15em;
+            text-align: center;
+            transform: translate(0, -0.05em);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .d-name {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .d-stat {
+            margin-right: 2ex;
+        }
+        .d-grid {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .d-grid-text, .d-grid-diff {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: .75em;
+            line-height: 1.5em;
+        }
+
+        .d-grid-pos {
+            font-weight: bold;
+            margin: 0 0.3em;
+        }
+
+        .d-name {
+            flex-shrink: 0;
+        }
+
+        .d-top {
+            margin-bottom: .1em;
+        }
+        .driver-profile-holder {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .d-stat-title {
+            font-size: .4em;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        #driver-profile {
+            min-width: 960px;
+            transition-duration: 500ms;
+        }
+
+        .d-right {
+            flex-grow: 1;
+        }
+
+        .d-bottom {
+            justify-content: space-between;
+        }
+        .d-name {
+            display: flex;
+            align-items: center;
+        }
+
+        .d-pos {
+            font-size: .7em;
+            background-color: white;
+            color: black;
+            width: 48px;
+            height: 48px;
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom-right-radius: .5em;
+            margin-right: .3em;
+        }
+        .d-bottom {
+            animation-duration: .5s;
+            animation-delay: .25s;
+            animation-fill-mode: backwards;
+        }
+        .d-stat:nth-child(4),
+        .d-stat:nth-child(5) {
+            display: none;
+        }
+        .driver-profile-holder.parts-2 .d-stat:nth-child(3){
+            display: none;
+        }
+
+
+        .scoreboard-icons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .scoreboard-internal {
+            display: flex;
+            width: 100%;
+            justify-content: flex-start;
+            align-items: center;
+            height: 100%;
+        }
+        .s-pos {
+            width: 38px;
+        }
+        .s-team-stripe {
+            width: 6px;
+            height: 22px;
+            /*background-color: gray;*/
+            margin: 0 6px;
+            flex-shrink: 0;
+        }
+
+        .scoreboard-item {
+            background-color: rgba(0,0,0,1);
+        }
+        .s-pos, .s-driver-name {
+            /*opacity: 0;*/
+        }
+        .scoreboard-item.is-spectating {
+            background-color: white;
+            color: black;
+        }
+
+        .scoreboard-item.is-spectating .s-pos .pos {
+            background-color: black;
+            color: white;
+        }
+        .scoreboard-item.status--dnf {
+            background-color: rgba(32,32,32,1);
+        }
+        .scoreboard-item.status--dnf > div {
+            opacity: 0.4;
+        }
+        .scoreboard-item.status--dsq {
+            background-color: rgba(32,0,0,1);
+        }
+        .scoreboard-item.status--dsq > div {
+            opacity: 0.4;
+        }
+        .scoreboard-item {
+            /*display: block !important;*/
+        }
+    </style>
 </head>
-<body>
+<body class="main">
 <div id="app" v-cloak>
-    <div class="ai" v-if="isAI">AI</div>
+    <transition name="swipe-left">
+        <div class="ai" v-if="isAI && settings.leaderboardIcons">AI</div>
+    </transition>
+    <transition name="swipe-left">
+        <div class="ai" v-if="isAI && settings.leaderboardIcons">AI</div>
+    </transition>
+
+    <transition name="swipe-down">
+        <transition-group is="div" name="list" id="scoreboard" v-if="settings.leaderboardIcons">
+            <div v-for="(car, i) in leaderboard" :key="car.carI" class="scoreboard-item" :class="{
+            'fastest-lap': fastestCar && fastestCar.carI === car.carI, 'is-spectating': spectatingCar && car.carI === spectatingCar.carI,
+            'status--dnf': car.resultStatus === 7 || car.resultStatus === 4, 'status--dsq': car.resultStatus === 5 }">
+                <div class="scoreboard-internal">
+                    <div class="s-pos"><pos-component :pos="car.pos" /></div>
+                    <div class="s-team-stripe" :style="{ backgroundColor: car.team && car.team.color }"></div>
+                    <div class="s-driver-name">{{ car.team && car.team.code ? car.team.code + " " : ""}}{{ car.name }}</div>
+                </div>
+                <div class="scoreboard-icons">
+                    <div class="drs drs-charging" v-if="car.drs.distance" :style="drsStyle(car.drs.distance)"><!--DRS--></div>
+                    <div class="drs drs-active" v-if="car.drs.active"><!--DRS--></div>
+                    <transition name="swipe-left">
+                        <div class="w-box warning" v-if="car.persist && car.persist.warning && !car.persist.penalty">W</div>
+                    </transition>
+                    <transition name="swipe-left">
+                        <div class="w-box penalty" v-if="car.persist && car.persist.penalty">P</div>
+                    </transition>
+                    <div class="ai" v-if="car.ai">AI</div>
+                </div>
+            </div>
+        </transition-group>
+    </transition>
+
+    <transition name="podium">
+        <div id="podium" v-if="settings.podium">
+            <div v-for="(car, i) in podium" :key="car.carI" :class="`podium-item o-p${car.pos}`" :style="{order: podiumOrder(car.pos)}">
+                <div class="o-part o-name">
+                    <div class="o-pos">{{ car.pos }}</div>
+                    <div class="o-name-text">{{ car.name }}</div>
+                </div>
+                <div class="o-part o-stripe" :style="{ backgroundColor: car.team.color }"></div>
+                <div class="o-part o-team">{{ car.team.name }}</div>
+            </div>
+        </div>
+    </transition>
+
+    <transition name="podium">
+        <div id="podium-lower" v-if="settings.podium">
+            <div class="o-lower-part o-lower-fastest" v-if="fastestCar && fastestCar.team">
+                <div class="o-lower-text">Fastest Lap</div>
+                <div class="o-lower-stripe" :style="{backgroundColor: fastestCar.team.color}"></div>
+                <div class="o-lower-name">{{ fastestCar.name }}</div>
+            </div>
+            <div class="o-lower-part o-lower-fastest" v-if="winningConstructor">
+                <div class="o-lower-text">Best Team</div>
+                <div class="o-lower-stripe" :style="{backgroundColor: winningConstructor.color}"></div>
+                <div class="o-lower-name">{{ winningConstructor.name }}</div>
+            </div>
+        </div>
+    </transition>
+
+    <div class="driver-profile-holder" :class="{'parts-2': spectatingCarData && spectatingCarData.localDriverData && spectatingCarData.localDriverData.notes }">
+    <transition mode="out-in" name="swipe-right">
+            <div id="driver-profile" :key="spectatingCar.carI" v-if="settings.driverGraphics && spectatingCar && spectatingCar.localDriverData">
+                <div class="d-number" :style="`text-shadow: 0 0 0.25em ${spectatingCar.driver.team.color};`">{{ spectatingCar.number }}</div>
+                <div class="d-right">
+                    <div class="d-top">
+                        <div class="d-name">
+                            <div class="d-pos">{{ spectatingCarData.pos }}</div>
+                            <div class="d-name-text">{{ spectatingCar.name }}</div>
+                        </div>
+                        <div class="d-grid" v-if="session && session.m_sessionType && session.m_sessionType.short === 'R'">
+                            <span class="d-grid-text">Grid</span>
+                            <span class="d-grid-pos">{{ spectatingCar.driver.gridPos }}</span>
+                            <span class="d-grid-diff" :style="{color: spectatingCarData.gridDiff > 0 ? 'lime' : spectatingCarData.gridDiff < 0 ? 'red' : ''}">{{ spectatingCarData.gridDiff > 0 ? '+' : ''}}{{ !spectatingCarData.gridDiff ? '--' : spectatingCarData.gridDiff }}</span>
+                        </div>
+                    </div>
+                        <div class="d-bottom anim--swipe-right">
+                            <div class="d-stat">
+                                <div class="d-stat-title">Championship</div>
+                                <div class="d-stat-num"><b>{{ spectatingCar.localDriverData.points }}</b>
+                                    <small>pts</small> (#{{ spectatingCar.localDriverData.rank }})
+                                </div>
+                            </div>
+                            <div class="d-stat" v-if="spectatingCarData.localDriverData && spectatingCarData.localDriverData.notes">
+                                <div class="d-stat-title">Driver notes</div>
+                                <div class="d-stat-num">{{ spectatingCarData.localDriverData.notes }}</div>
+                            </div>
+                            <div class="d-stat" v-if="spectatingCarData.finishes">
+                                <div class="d-stat-title">Best finishes</div>
+                                <div class="d-stat-num">{{ spectatingCarData.finishes }}</div>
+                            </div>
+                            <div class="d-stat" v-if="spectatingCar.localDriverData && spectatingCar.localDriverData.lastRace && spectatingCar.localDriverData.lastRace.rank">
+                                <div class="d-stat-title">Last race finish</div>
+                                <div class="d-stat-num">{{ spectatingCar.localDriverData.lastRace.rank}}{{ spectatingCar.localDriverData.lastRace.fastestLap ? ' (F)' : '' }}
+                                </div>
+                            </div>
+                            <div class="d-stat">
+                                <div class="d-stat-title">This race best lap</div>
+                                <div class="d-stat-num">{{ spectatingCarData.bestLapTime }}</div>
+                            </div>
+                        </div>
+                </div>
+            </div>
+    </transition>
+    </div>
 
     <transition-group tag="div" id="alerts" name="list">
-        <div class="alert" v-for="alert in alerts" :key="alert.id" :data-key="alert.id" v-bind:key="alert.id">
-            <div class="alert-stripe" v-if="alert.stripe" :data-stripe="alert.stripe" :style="{ backgroundColor: alert.stripe }"></div>
-            <div class="alert-body">
-                <div class="alert-title">{{ alert.title }}</div>
-                <div class="alert-description">{{ alert.description }}</div>
+        <div class="alert" v-for="alert in validAlerts" :key="alert.id" :data-key="alert.id" v-bind:key="alert.id">
+            <div class="alert-part alert-major" v-if="alert.major" :style="{ backgroundColor: alert.stripe, color: 'black' }">{{ alert.major }}</div>
+            <div class="alert-part alert-main">
+                <div class="alert-stripe" v-if="alert.stripe" :data-stripe="alert.stripe" :style="{ backgroundColor: alert.stripe }"></div>
+                <div class="alert-body">
+                    <div class="alert-title">{{ alert.title }}</div>
+                    <div class="alert-description">{{ alert.description }}</div>
+                </div>
             </div>
         </div>
     </transition-group>
 </div>
 <script src="/socket.io/socket.io.js"></script>
+<script src="/shared.js"></script>
 <script>
     const socket = new io();
 
     const app = new Vue({
         el: "#app",
+        components: {
+            PosComponent
+        },
         data: {
             alerts: [],
-            spectatingCar: null
+            spectatingCar: null,
+            leaderboard: [],
+            session: null,
+            settings: {
+                alerts: true,
+                leaderboardIcons: true,
+                podium: true,
+                driverGraphics: false
+            }
+        },
+        methods: {
+            podiumOrder(pI) {
+                // 2, 1, 3
+                if (pI === 2) return 1;
+                if (pI === 1) return 2;
+                if (pI === 3) return 3;
+            },
+            unText(text) {
+                if (!text) return 0;
+                if (text === "-:--.---") return 0;
+                let [mins, secs] = text.split(":");
+                let ms;
+                [secs, ms] = secs.split('.')
+                return (parseInt(mins) * 60 * 1000) + (parseInt(secs) * 1000) + parseInt(ms);
+            },
+            ordinal(num) {
+                num = num.toString().trim();
+                if (["11","12","13"].includes(num.slice(-2))) return "th";
+                if (num.slice(-1) === "1") return "st";
+                if (num.slice(-1) === "2") return "nd";
+                if (num.slice(-1) === "3") return "rd";
+                return "th";
+            },
+            drsStyle(distance) {
+                let perc = parseInt(distance) / 250;
+                if (perc > 1) perc = 1;
+                if (perc < 0) perc = 0;
+                return {
+                    height: `${(1 - perc) * 26}px`
+                }
+            }
         },
         computed: {
             isAI() {
                 // return true;
                 return this.spectatingCar && this.spectatingCar.isAI;
+            },
+            validAlerts() {
+                if (!this.settings.alerts) return [];
+                return this.alerts;
+            },
+            podium() {
+                return this.leaderboard.slice(0, 3);
+            },
+            fastestCar() {
+                return this.leaderboard.filter(m => this.unText(m.bestLapTime) && ![5,7].includes(m.resultStatus)).sort((a, b) => this.unText(a.bestLapTime) - this.unText(b.bestLapTime))[0]
+            },
+            fastestTime() {
+                return this.fastestCar ? this.fastestCar.bestLapTime : null
+            },
+            winningConstructor() {
+                let constructors = [];
+                const points = [25,18,15,12,10,8,6,4,2,1,0];
+                this.leaderboard.filter(m => ![5,7].includes(m.resultStatus)).forEach(car => {
+                    if (!constructors.find(c => c.name === car.team.name)) constructors.push({ name: car.team.name, cars: [car], points: 0, color: car.team.color })
+                    constructors.find(c => c.name === car.team.name).points += points[car.pos - 1];
+                })
+                return constructors.sort((a,b) => b.points - a.points)[0]
+            },
+            spectatingCarData() {
+                if (!this.spectatingCar) return null;
+                let finishes = [];
+                if (this.spectatingCar.localDriverData) {
+                    Object.entries(this.spectatingCar.localDriverData.finishes).forEach(([pos, count]) => {
+                        if ((count.toString() !== "0") && finishes.length !== 2) {
+                            finishes.push(`${pos}${this.ordinal(pos)} x${count}`)
+                        }
+                    })
+                }
+                return {
+                    ...this.leaderboard.find(car => car.carI === this.spectatingCar.carI),
+                    finishes: finishes.join(', ')
+                };
             }
         }
     })
 
     socket.on("connect", () => {
         console.log("connected to websocket!");
-        // socket.emit("subscribe", "leaderboard");
+        socket.emit("subscribe", "leaderboard");
         socket.emit("subscribe", "spectating");
+        socket.emit("subscribe", "session");
+    })
+
+    socket.on("session", (session) => {
+        app.session = session;
     })
 
     socket.on("new-alert", (alert) => {
@@ -49,6 +545,9 @@
         alert = { ...alert, id }
         console.log(alert);
 
+        if (alert.only) {
+            app.alerts = app.alerts.filter(a => a.only !== alert.only);
+        }
         app.alerts.push(alert);
 
         setTimeout(() => {
@@ -59,6 +558,27 @@
     socket.on("spectating", car => {
         app.spectatingCar = car;
         console.log(car);
+    })
+
+    function sortLeaderboard(a, b) {
+        if (a.pos === b.pos) return 0;
+        if (a.pos === 0) return 1;
+        if (b.pos === 0) return -1;
+        return a.pos - b.pos;
+    }
+
+    socket.on("leaderboard", data => {
+        app.leaderboard = data.filter(car => car.pos !== 0).sort(sortLeaderboard).map(car => {
+            let gridDiff = car.gridPosition - car.pos;
+            return {
+                ...car,
+                gridDiff
+            };
+        });
+    })
+    socket.on("settings", settings => {
+        console.log(settings);
+        app.settings = settings;
     })
 
 </script>

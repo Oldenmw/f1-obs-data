@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>F1 Overlay</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <meta charset="UTF-8">
+    <title>F1 Overlay</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
 </head>
 <body>
 <div id="app" v-cloak>
@@ -12,15 +12,15 @@
 </div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-  const socket = new io();
+    const socket = new io();
 
-  const app = new Vue({
-    el: "#app",
-  })
+    const app = new Vue({
+        el: "#app",
+    })
 
-  socket.on("connect", () => {
-    console.log("connected to websocket!");
-  })
+    socket.on("connect", () => {
+        console.log("connected to websocket!");
+    })
 </script>
 </body>
 </html>

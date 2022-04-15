@@ -32,6 +32,9 @@
         tr.is-spectating {
             background-color: #00696e;
         }
+        tr.is-focused {
+            background-color: #068d61 !important;
+        }
 
         .sectors {
             display: flex;
@@ -46,18 +49,6 @@
             padding: 0 6px;
         }
 
-        .sector[data-sector-color="red"] {
-            background-color: darkred;
-        }
-
-        .sector[data-sector-color="green"] {
-            background-color: darkgreen;
-        }
-
-        .sector[data-sector-color="purple"] {
-            background-color: purple;
-        }
-
         .status--dnf {
             background-color: #333;
             color: #ccc;
@@ -68,12 +59,108 @@
             color: #ccc;
         }
 
+
+        .buttons {
+            margin-bottom: 8px;
+            display: flex;
+        }
+
+        .f-button {
+            display: flex;
+            padding: 8px;
+            user-select: none;
+            cursor: pointer;
+            background-color: rgba(255,255,255,0.1);
+        }
+        .f-button:hover {
+            background-color: rgba(255,255,255,0.15)
+        }
+
+        .f-button-text {
+            margin-right: 8px;
+        }
+
+        .f-button-clickable {
+            display: flex;
+        }
+
+        .f-button-sub {
+            min-width: 36px;
+            text-align: center;
+        }
+
+        .f-button-off.color {
+            background-color: red;
+        }
+
+        .f-button-on.color {
+            background-color: lime;
+            color: black;
+        }
+
+        .f-button + .f-button {
+            margin-left: 8px;
+        }
+
+        /*.f-button, .f-button-clickable {*/
+        /*    flex-direction: column;*/
+        /*    text-align: center;*/
+        /*    justify-content: center;*/
+        /*    align-items: center;*/
+        /*}*/
+
+        /*.f-button-text {*/
+        /*    margin-right: 0;*/
+        /*    margin-bottom: 4px;*/
+        /*}*/
+
+        td.status {
+            position: relative;
+        }
+
+        .status-r {
+            position: absolute;
+            right: 0;
+            font-size:0.8em;
+            top: 2px;
+            font-variant: tabular-nums;
+            padding: 0 2px;
+            font-weight: 400;
+        }
     </style>
     <link rel="stylesheet" href="https://slmn.io/fa-all.min.css"/>
 </head>
 <body>
 <div id="app" v-cloak>
+    <div class="buttons">
+        <f-button mode="on-off" name="qualifying">Qualifying</f-button>
+        <f-button mode="on-off" name="alerts">Alerts</f-button>
+        <f-button mode="on-off" name="spectatorSectors">Spectator Sectors</f-button>
+        <f-button mode="on-off" name="driverGraphics">Driver Graphics</f-button>
+    </div>
+    <div class="buttons">
+        <f-button mode="on-off" name="showQualifyingFastest">QF</f-button>
+        <f-button mode="on-off" name="showQualifyingSpectating">QS</f-button>
+        <f-button mode="on-off" name="leaderboardIcons">Leaderboard Icons</f-button>
+        <f-button mode="on-off" name="podium">Podium</f-button>
+    </div>
     <table v-if="leaderboardData?.[0]">
+        <thead v-if="session" @click="extraData = !extraData">
+            <tr>
+                <td colspan="50" class="status" :class="{ 'safety-car': session.m_safetyCarStatus && session?.m_safetyCarStatus !== 'No Safety Car' }">
+                    {{ session.m_sessionType?.short }} |
+                    {{ session.m_weather }} |
+                    {{ completedLaps }}/{{ session.m_totalLaps }}
+<!--                    {{ session.m_sessionDuration }}-->
+<!--                    {{ session.m_sessionTimeLeft }}-->
+                    {{ session.m_safetyCarStatus }}
+                    <span class="status-r">
+                        Purple: <span v-for="sec in purple">{{ msToHMS(sec) }} </span>
+                    </span>
+                    <!--  {{ session.m_safetyCarStatus === 2 ? 'VIRTUAL' : ''}} {{ session.m_safetyCarStatus ? 'SAFETY CAR' : ''}} -->
+                </td>
+            </tr>
+        </thead>
         <thead>
         <th>Pos</th>
         <th></th>
@@ -81,47 +168,53 @@
         <th>Best Lap</th>
         <th>Lap</th>
         <th>Current</th>
-        <th>Sec</th>
+        <th v-if="extraData">Sec</th>
         <th>Sectors</th>
         <th>Tyres</th>
         <th>Pen</th>
-        <th>DS</th>
         <th>Pit</th>
         <th colspan="2">Grid</th>
+        <th>DRS</th>
         <th>AI</th>
-        <th colspan="3">IDs</th>
+        <th v-if="extraData">Last Lap</th>
+        <th v-if="extraData" colspan="3">IDs</th>
+        <th v-if="extraData">DS</th>
+        <th v-if="extraData">RS</th>
+        <th v-if="extraData">Last</th>
+        <th v-if="extraData">Comp</th>
+        <th v-if="extraData">Warnings</th>
         </thead>
         <tbody>
-        <tr v-for="(car, i) in leaderboardData" v-bind:key="car.carI"
-            v-bind:class="{'is-spectating': car.carI === spectatingCar?.carI, 'status--dnf': car.resultStatus === 7, 'status--dsq': car.resultStatus === 5 }">
+        <tr v-for="(car, i) in leaderboardData" v-bind:key="car.carI" @click="focus === car.carI ? focus = null : focus = car.carI"
+            v-bind:class="{'is-spectating': car.carI === spectatingCar?.carI, 'is-focused': focus === car.carI, 'status--dnf': car.resultStatus === 7 || car.resultStatus === 4, 'status--dsq': car.resultStatus === 5 }">
             <!--        <td v-for="[key, val] in Object.entries(car)">-->
             <!--          {{ val }}-->
             <!--        </td>-->
             <td>P{{ car.pos }}</td>
-            <td class="team-slice" :style="{backgroundColor: car.team?.color}"></td>
+            <td class="team-slice" :style="{backgroundColor: car.team?.color}" :title="car.team?.name"></td>
             <td>{{ car.name }}</td>
             <td :class="{'fastest': fastestCar && fastestCar.carI === car.carI}">{{ car.bestLapTime }}</td>
             <td>{{ car.currentLapNum }}</td>
             <td>{{ car.currentLapTime }}</td>
-            <td>{{ car.inSector }}</td>
+            <td v-if="extraData">{{ car.inSector }}</td>
 
             <td class="sectors">
-                <div class="sector" v-for="sector in car.sectors"
+                <div class="sector" v-for="(sector, sectorNum) in car.sectors"
                      :data-sector-color="sector.sectorTime !== '-:--.---' && sector.sectorColor"
                      :title="sector.bestLapSectorTime">
                     {{ sector.sectorTime }}
                 </div>
+<!--                <div class="sector">{{ car.sectors[2]._testing }}</div>-->
             </td>
-            <td class="tyres" v-if="car.tyres">
+            <td class="tyres" v-if="car.tyres && car.tyres.name">
                 <i class="fas fa-tire" :style="{color: car.tyres.color}"></i>
-                {{ car.tyres.name }} {{ car.carStatus?.m_tyresAgeLaps }}
+                {{ car.tyres.name.slice(0,1) }} {{ car.carStatus?.m_tyresAgeLaps }}
                 lap{{ car.carStatus?.m_tyresAgeLaps === 1 ? '' : 's' }}
             </td>
             <td>
                 {{ car.penalties > 0 ? `${car.penalties}s` : '' }}
                 {{ car.driveThroughs > 0 ? `DT${car.driveThroughs === 1 ? '' : ` x${car.driveThroughs}`}` : '' }}
             </td>
-            <td>{{ car.driverStatus }}</td>
             <td>{{ car.allCarData.m_numPitStops }} stop{{ car.allCarData.m_numPitStops === 1 ? '' : 's' }} {{ car.pitStatus !== 0 ? `PIT ${car.pitStatus}` : '' }}</td>
             <td>{{ car.gridPosition }}</td>
             <td class="grid-diff" :style="{color: car.gridDiff > 0 ? 'lime' : car.gridDiff < 0 ? 'red' : ''}">
@@ -130,27 +223,87 @@
                 <i class="fas fa-fw fa-minus" v-if="!car.gridDiff"></i>
                 <span v-if="car.gridDiff">{{ Math.abs(car.gridDiff) }}</span>
             </td>
+<!--            <td>{{ car.drs }}</td>-->
+            <td>{{ car.carStatus.m_drsAllowed }} {{ car.carStatus.m_drsActivationDistance }}</td>
             <td>{{ car.ai ? 'AI': ''}}</td>
-            <td>i{{ car.carI }}</td>
-            <td>C{{ car.carNumber }}</td>
-            <td>N{{ car.networkID }}</td>
-            <td>{{ car.resultStatus }}</td>
+            <td v-if="extraData">{{ car.lastLapTime }}</td>
+            <td v-if="extraData">i{{ car.carI }}</td>
+            <td v-if="extraData">C{{ car.carNumber }}</td>
+            <td v-if="extraData">N{{ car.networkID }}</td>
+            <td v-if="extraData">{{ car.driverStatus }}</td>
+            <td v-if="extraData">{{ car.resultStatus }}</td>
+            <td v-if="extraData">{{ car.localDriverData && car.localDriverData.lastRace ? `${ car.localDriverData.lastRace.rank || " -" }${ car.localDriverData.lastRace.fastestLap ? ' F' : ''}` : '' }}</td>
+            <td v-if="extraData">{{ msToHMS(car.comparisonLap) }}</td>
+            <td v-if="extraData">{{ car.persist.counts.warnings ? car.persist.counts.warnings + 'W ' : '' }}{{ car.persist.counts.penalty ? car.persist.counts.penalty + 'P ' + car.persist.counts.penaltyTime + 's ' : ''}}</td>
         </tr>
         </tbody>
     </table>
 
-    <hr>
-    <h3>Next to finish lap</h3>
-    <table>
-        <tr v-for="car in nextToFinishLap">
-            <td class="team-slice" :style="{backgroundColor: car.team?.color}"></td>
-            <td>{{ car.name }}</td>
-            <td :style="diffColor(car.carI)">{{ justFinishedLapData[car.carI]?.hold ? parseDiff(justFinishedLapData[car.carI].diff) : car.currentLapTime }}</td>
-            <td>{{ fastestCar.bestLapTime }}</td>
-            <td>P{{ car.pos }}</td>
-            <td>{{ justFinishedLapData[car.carI]?.hold ? car.lastLapTime : '' }}</td>
+    <table v-if="focus !== null" style="margin-top: 1.5em;">
+        <tr>
+            <th>Lap</th>
+            <th>Time</th>
+            <th>Sector 1</th>
+            <th>Sector 2</th>
+            <th>Sector 3</th>
+        </tr>
+        <tr v-for="(lap, i) in focusedLapData.m_lapHistoryData">
+            <td>{{ i + 1 }}</td>
+            <td :class="{ fastest: focusedLapData.m_bestLapTimeLapNum === i + 1}">{{ msToHMS(lap.m_lapTimeInMS) }}</td>
+            <td :class="{ fastest: focusedLapData.m_bestSector1LapNum === i + 1}">{{ msToHMS(lap.m_sector1TimeInMS) }}</td>
+            <td :class="{ fastest: focusedLapData.m_bestSector2LapNum === i + 1}">{{ msToHMS(lap.m_sector2TimeInMS) }}</td>
+            <td :class="{ fastest: focusedLapData.m_bestSector3LapNum === i + 1}">{{ msToHMS(lap.m_sector3TimeInMS) }}</td>
+            <td>{{ lap.m_lapValidBitFlags }}</td>
         </tr>
     </table>
+
+<div class="sides">
+    <div style="width: 620px;">
+        <h3>Next to finish lap</h3>
+        <table v-if="nextToFinishLap.length">
+            <tr>
+                <th colspan="2">Driver</th>
+                <th>Current</th>
+                <th>Pole</th>
+                <th>Best</th>
+                <th>P#</th>
+                <th>Last</th>
+            </tr>
+            <tr v-for="car in nextToFinishLap">
+                <td class="team-slice" :style="{backgroundColor: car?.team?.color || 'red'}"></td>
+                <td>{{car.ai ? 'AI ' : ''}}{{ car.name }}</td>
+                <td :style="diffColor(car.carI)">{{ justFinishedLapData[car.carI]?.hold ? parseDiff(justFinishedLapData[car.carI].diff) : car.currentLapTime }}</td>
+                <td>{{ fastestCar && fastestCar.bestLapTime }}</td>
+                <td>{{ car.bestLapTime }}</td>
+                <td>{{ car.pos }}</td>
+                <td>{{ justFinishedLapData[car.carI]?.hold ? car.lastLapTime : '' }}</td>
+            </tr>
+        </table>
+    </div>
+    <div style="width: 454px;">
+        <h3>Alerts</h3>
+        <div class="alert" v-for="alert in alerts" :key="alert.id" :data-key="alert.id" v-bind:key="alert.id">
+            <div class="alert-part alert-major" v-if="alert.major" :style="{ backgroundColor: alert.stripe, color: 'black' }">{{ alert.major }}</div>
+            <div class="alert-part alert-main">
+                <div class="alert-stripe" v-if="alert.stripe" :data-stripe="alert.stripe" :style="{ backgroundColor: alert.stripe }"></div>
+                <div class="alert-body">
+                    <div class="alert-title">{{ alert.title }}</div>
+                    <div class="alert-description">{{ alert.description }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+<!--    <div style="max-width: 600px">-->
+<!--        <table v-if="spectatingCarData">-->
+<!--            <tr v-for="([x,y]) in Object.entries(spectatingCarData)">-->
+<!--                <td>{{ x }}</td>-->
+<!--                <td>{{ y }}</td>-->
+<!--            </tr>-->
+<!--        </table>-->
+<!--    </div>-->
+</div>
+
+<!--    <h3>Lap info</h3>-->
 </div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -161,7 +314,37 @@
         data: {
             leaderboardData: [],
             spectatingCar: null,
-            justFinishedLapData: []
+            justFinishedLapData: [],
+            session: {},
+            sessionHistory: {},
+            focus: null,
+            lobbyInfo: {},
+            finalClassification: null,
+            alerts: [],
+            lastFastestTime: null,
+            settings: {
+                qualifying: true
+            },
+            extraData: false,
+            purple: null
+        },
+        components: {
+            "FButton": {
+                name: "FButton",
+                props: ["mode", "name"],
+                computed: {
+                    active() {
+                        return this.$root.settings[this.name];
+                    }
+                },
+                template: `<div class="f-button" @click="() => $root.toggleSetting(name)">
+                <div class="f-button-text"><slot></slot></div>
+                <div class="f-button-clickable" v-if="mode === 'on-off'">
+                    <div class="f-button-sub f-button-on" :class="{'color': active}">On</div>
+                    <div class="f-button-sub f-button-off" :class="{'color': !active}">Off</div>
+                </div>
+                </div>`
+            }
         },
         computed: {
             nextToFinishLap() {
@@ -171,11 +354,43 @@
                         if (aHold) return -1;
                         if (bHold) return 1;
                     }
+                    let diff = b.allCarData.m_lapDistance - a.allCarData.m_lapDistance;
+
+                    if (aHold && bHold) {
+                        // console.log("both hold (b,a,-diff)", b.pos, a.pos, b.allCarData.m_lapDistance, a.allCarData.m_lapDistance, b.allCarData.m_lapDistance - a.allCarData.m_lapDistance > 0, diff)
+
+                        if (diff > 3000) {
+                            console.log("b ahead", b.pos, a.pos)
+                            return -1;
+                        } else if (diff < -3000) {
+                            console.log("a ahead", a.pos, b.pos)
+                            return 1;
+                        } else {
+                            console.log("ccc (normal)")
+                        }
+                    }
+
                     return b.allCarData.m_lapDistance - a.allCarData.m_lapDistance
                 }).filter(car => (unText(car.currentLapTime) || this.justFinishedLapData[car.carI]?.hold) && car.pitStatus === 0 && ![5,7].includes(car.resultStatus));
             },
             fastestCar() {
-                return this.leaderboardData.filter(m => m.bestLapTime).sort((a, b) => unText(a.bestLapTime) - unText(b.bestLapTime))[0]
+                return this.leaderboardData.filter(m => unText(m.bestLapTime)).sort((a, b) => unText(a.bestLapTime) - unText(b.bestLapTime))[0]
+            },
+            fastestTime() {
+                return this.fastestCar?.bestLapTime
+            },
+            focusedLapData() {
+                if (this.focus === null) return [];
+                let data = this.sessionHistory[this.focus];
+                data.m_lapHistoryData = data.m_lapHistoryData.filter(l => l.m_sector1TimeInMS)
+                return data;
+            },
+            completedLaps() {
+                return this.leaderboardData?.[0]?.currentLapNum || "--";
+            },
+            spectatingCarData() {
+                if (!this.spectatingCar) return null;
+                return this.leaderboardData.find(car => car.carI === this.spectatingCar.carI);
             }
         },
         watch: {
@@ -185,32 +400,62 @@
                     if (!oldCar) return;
 
                     if (newCar.currentLapNum !== oldCar.currentLapNum) {
-                        console.log("lap finished", newCar)
+                        console.log("lap finished", newCar, this.fastestTime)
                         // TODO: If they get the fastest lap, they become the fastest car.
                         //  Need to cache it somehow or check that this.fastestCar was from this lap just finished
                         this.justFinishedLapData[newCar.carI] = {
                             last: newCar.lastLapTime,
-                            diff: unText(newCar.lastLapTime) - unText(this.fastestCar.bestLapTime),
-                            hold: true
+                            diff: this.fastestCar?.bestLapTime && unText(newCar.lastLapTime) - unText(this.fastestCar.bestLapTime === newCar.lastLapTime && this.lastFastestTime ? this.lastFastestTime : this.fastestCar.bestLapTime ),
+                            hold: true,
+                            best: this.fastestCar?.bestLapTime === newCar.lastLapTime && this.lastFastestTime
                         };
                         setTimeout(() => {
                             this.justFinishedLapData[newCar.carI].hold = false;
                         }, 5000)
                     }
                 })
+            },
+            fastestTime(newData, oldData) {
+                console.log("new fastest time", newData, oldData);
+                this.lastFastestTime = oldData;
             }
         },
         methods: {
+            toggleSetting(name) {
+                this.settings[name] = !this.settings[name];
+
+                if (name === "qualifying" && this.settings[name]) {
+                    this.settings.alerts = false;
+                    socket.emit("setting", { name: "alerts", value: false})
+                }
+                if (name === "alerts" && this.settings[name]) {
+                    this.settings.qualifying = false;
+                    socket.emit("setting", { name: "qualifying", value: false})
+                }
+
+                socket.emit("setting", {
+                    name, value: this.settings[name]
+                })
+            },
+            msToHMS(ms) {
+                if (!ms) return "-:--.---"
+                let [m, mr] = [Math.floor(ms / (60 * 1000)),ms % (60 * 1000)];
+                let [s, sr] = [Math.floor(mr / 1000), ms % 1000]
+                // console.log(m, mr);
+
+                return `${m}:${this.zeroPad(s, 2)}.${this.zeroPad(sr, 3)}`
+            },
             zeroPad(num, size) {
                 return Math.abs(num).toString().padStart(size, "0")
             },
             parseDiff(ms) {
-                let [s, sr] = [Math.floor(ms / 1000), ms % 1000]
+                let [s, sr] = [Math.floor(Math.abs(ms) / 1000), Math.abs(ms) % 1000]
                 return `${(ms > 0 ? "+" : "-")}${this.zeroPad(s, 1)}.${this.zeroPad(sr, 3)}`
             },
             diffColor(carI) {
                 let data = this.justFinishedLapData[carI];
                 if (!data?.hold || !data?.diff) return null;
+                if (data.best) return { color: "#A015BB" }
                 return {
                     color: data.diff < 0 ? 'lime' : 'yellow'
                 }
@@ -227,7 +472,7 @@
 
         [secs, ms] = secs.split('.')
 
-        console.log(mins, secs, ms);
+        // console.log(mins, secs, ms);
 
         return (parseInt(mins) * 60 * 1000) + (parseInt(secs) * 1000) + parseInt(ms);
     }
@@ -236,8 +481,25 @@
         console.log("connected to websocket!");
         socket.emit("subscribe", "leaderboard");
         socket.emit("subscribe", "spectating");
+        socket.emit("subscribe", "session");
+        socket.emit("subscribe", "sessionHistory");
+        socket.emit("subscribe", "lobbyInfo");
+        socket.emit("subscribe", "finalClassification");
+        socket.emit("subscribe", "purple");
+        app.focus = null;
     })
+    socket.on("new-alert", (alert) => {
+        let id = (new Date()).getTime();
+        alert = { ...alert, id }
+        console.log(alert);
 
+        app.alerts.push(alert);
+
+        setTimeout(() => {
+            let idx = app.alerts.findIndex(a => a.id === id);
+            if (idx !== -1) app.alerts.splice(idx, 1);
+        }, (alert.duration || 8000) * 1.5);
+    });
     function sortLeaderboard(a, b) {
         if (a.pos === b.pos) return 0;
         if (a.pos === 0) return 1;
@@ -258,6 +520,17 @@
     socket.on("spectating", car => {
         app.spectatingCar = car;
     })
+
+    socket.on("settings", settings => {
+        console.log(settings);
+        app.settings = settings;
+    })
+
+    socket.on("purple", purple => app.purple = purple.sectors);
+    socket.on("session", session => app.session = session);
+    socket.on("sessionHistory", sessionHistory => app.sessionHistory = sessionHistory);
+    socket.on("lobbyInfo", lobbyInfo => app.lobbyInfo = lobbyInfo);
+    socket.on("finalClassification", finalClassification => app.finalClassification = finalClassification);
 </script>
 </body>
 </html>
